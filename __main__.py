@@ -105,6 +105,7 @@ def rename_files(input_filepaths, output_filepaths):
         logging.debug('rename:\n\tfrom: {i}\n\tto  : {o}'.format(i=src, o=dst))
         copyfile(src, dst)
 
+
 def rectoverso(input_dirpath,
                output_dirpath,
                output_filepattern,
@@ -139,6 +140,8 @@ class RectoVersoMainWindow(tk.Frame):
         self.is_windows_checked.trace("w", lambda a,b,c : self.on_option())
         self.is_reversed_checked = tk.IntVar()
         self.is_reversed_checked.trace("w", lambda a,b,c : self.on_option())
+        self.column_sort = tk.IntVar()
+        self.column_sort.trace("w", lambda a,b,c : self.on_option())
 
         if 'input' in options:
             self.input_dirpath.set(options['input'])
@@ -196,14 +199,15 @@ class RectoVersoMainWindow(tk.Frame):
         output_dir_button.pack(side=tk.LEFT, padx=PAD//2)
 
         # list
-        self.input_file_cols = ['original name', 'renamed']
-        self.input_file_view = ttk.Treeview(self, columns=self.input_file_cols)
+        self.input_file_cols = ['original', 'renamed'] #, 'page']
+        self.input_file_view = ttk.Treeview(self, columns=self.input_file_cols)#, show='headings')
         self.input_file_view.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=PAD//2, pady=PAD//2)
-        self.input_file_view.heading("#0", text="#", anchor=tk.W)
-        self.input_file_view.column("#0", width=10)
-        for col_name in self.input_file_cols:
-            # self.input_file_view.column(col_name, width=50)
-            self.input_file_view.heading(col_name, text=col_name)
+        # self.input_file_view.heading("#0", text="#", anchor=tk.W)
+        # self.input_file_view.column('#0', stretch=False, width=30, minwidth=30)
+        for i, col_name in enumerate(['#0'] + self.input_file_cols):
+            self.input_file_view.heading(col_name, text=col_name, anchor=tk.W, command=self.sort_col_factory(i))
+        # self.input_file_view.heading('renamed', text="re name", anchor=tk.W, command=lambda: self.column_sort.set(1))
+        # self.input_file_view.heading('page', text="page", anchor=tk.W, command=lambda: self.column_sort.set(2))
 
         # proceed
         current_frame = tk.LabelFrame(self, text='proceed', padx=PAD//2, pady=PAD//2)
@@ -218,7 +222,13 @@ class RectoVersoMainWindow(tk.Frame):
         self.is_brother_checked.set(1)
         self.is_windows_checked.set(1)
         self.is_reversed_checked.set(1)
+        self.column_sort.set(0)
 
+    def sort_col_factory(self, i):
+        return lambda: self.column_sort.set(i)
+
+    def on_populate(self):
+        self.populate()
 
     def on_browse_input(self):
         browse_dirpath = tk.filedialog.askdirectory(title="Select scanned directory",
@@ -227,14 +237,14 @@ class RectoVersoMainWindow(tk.Frame):
             self.input_dirpath.set(browse_dirpath)
             self.populate()
 
-    def on_populate(self):
-        self.populate()
-
     def on_browse_output(self):
         browse_dirpath = tk.filedialog.askdirectory(title="Select output directory",
                                                   initialdir=self.output_dirpath.get(),)
         if browse_dirpath:
             self.output_dirpath.set(browse_dirpath)
+
+    def on_sort_original(self):
+        self.column_sort.set('names')
 
     def on_option(self):
         self.populate()
@@ -255,12 +265,23 @@ class RectoVersoMainWindow(tk.Frame):
                                 self.is_windows_checked.get(),
                                 self.is_reversed_checked.get())
 
-        output_filepaths = get_output_filepaths(input_filepaths, '', self.output_pattern.get())
-        input_filepaths = (path.relpath(f, self.input_dirpath.get()) for f in input_filepaths)
+        output_filepaths = get_output_filepaths(input_filepaths,
+                                                self.output_dirpath.get(),
+                                                self.output_pattern.get())
+        # only life names
+        if True:
+            input_filepaths = (path.relpath(f, self.input_dirpath.get()) for f in input_filepaths)
+            output_filepaths = (path.relpath(f, self.output_dirpath.get()) for f in output_filepaths)
+
+        columns = [(p, i, o) for p, (i, o) in enumerate(zip(input_filepaths, output_filepaths))]
+
+        # resort for display
+        columns = sorted(columns, key=lambda x : x[self.column_sort.get()])
+
         # display
         self.input_file_view.delete(*self.input_file_view.get_children())
-        for p, (i, o) in enumerate(zip(input_filepaths, output_filepaths)):
-            self.input_file_view.insert('', 'end', text=p, values=(i, o))
+        for i, cols in enumerate(columns):
+            self.input_file_view.insert('', 'end', text=cols[0], values=cols[1:])
 
 
 def rectoverso_main():
