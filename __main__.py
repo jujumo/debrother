@@ -34,40 +34,38 @@ def populate_pages(input_dirpath):
                  for filename in fs
                  if windows_scan_naming_convention.match(filename)]
 
-    return file_list
+    return sorted(file_list)
+
+
+def sort_brother_pages(file_list):
+    """
+    :param file_list:
+    :return:
+    """
+    brother_numbering_template = re.compile(r'_(?P<date>\d{8})(_(?P<num>\d+))?')
+
+    def get_brother_number(filepath):
+        return int(brother_numbering_template.search(filepath).groupdict()['num'] or '1')
+
+    return sorted(file_list, key=get_brother_number)
 
 
 def sort_widnows_files(file_list):
     """
     returns files order per pages and then batch :
-        Numérisation_20190412.jpg           --> page: 0  batch: 0
-        Numérisation_20190412_1.jpg         --> page: 1  batch: 0
-        Numérisation_20190412_2.jpg         --> page: 1  batch: 0
-        ...
-        Numérisation_20190412_10.jpg        --> page:10  batch: 0
-        Numérisation_20190412 (2).jpg       --> page: 0  batch: 1
-        Numérisation_20190412_1 (2).jpg     --> page: 1  batch: 1
-        Numérisation_20190412_2 (2).jpg     --> page: 1  batch: 1
-        ...
-        Numérisation_20190412_10 (2).jpg    --> page:10  batch: 1
+        ['xxx.jpg', 'xxx (2).jpg', 'yyy.jpg', 'yyy (2).jpg']
+        -->
+        ['xxx.jpg', 'yyy.jpg', 'xxx (2).jpg', 'yyy (2).jpg']
     """
+    windows_batch_template = re.compile(r'(\s\((?P<batch>\d+)\))?\.\w+$')
 
-    files_infos = {}
-    for filepath in file_list:
-        info = windows_scan_naming_convention.match(filepath).groupdict()
-        info['page'] = int(info['page']) - 1 if info['page'] else 0
-        info['batch'] = int(info['batch']) - 1 if info['batch'] else 0
-        info['filename'] = filepath
-        files_infos.setdefault(info['batch'], {})[info['page']] = filepath
+    def get_windows_batch_number(filepath):
+        return int(windows_batch_template.search(filepath).groupdict()['batch'] or '1')
 
-    sorted_fiels = [files_infos[batch][page]
-                    for batch in sorted(list(files_infos))
-                    for page in sorted(list(files_infos[batch]))]
-
-    return sorted_fiels
+    return sorted(file_list, key=get_windows_batch_number)
 
 
-def sort_rectoverso(file_list):
+def sort_reversed_verso(file_list):
     """
     [1,3,5,6,4,2] -> [1,2,3,4,5,6]
     """
@@ -90,13 +88,13 @@ def get_output_filepaths(input_filepath_list, output_dirpath):
     return [output_dirpath.format(**infos) for infos in input_infos_list]
 
 
-def rectoverso(input_dirpath, output_dirpath, **options):
+def rectoverso(input_dirpath, output_dirpath):
     input_filepath_list = populate_pages(input_dirpath)
     nb_files = len(input_filepath_list)
     logging.info('files to rename: {}.'.format(nb_files))
 
     input_filepath_list = sort_widnows_files(input_filepath_list)
-    input_filepath_list = sort_rectoverso(input_filepath_list)
+    input_filepath_list = sort_reversed_verso(input_filepath_list)
     output_filepath_list = get_output_filepaths(input_filepath_list, output_dirpath)
 
     for i, o in zip(input_filepath_list, output_filepath_list):
@@ -118,7 +116,9 @@ class RectoVersoMainWindow(tk.Frame):
         self.output_dirpath = tk.StringVar()
         self.filename_pattern = tk.StringVar()
         self.input_file_list = {}
+        self.is_brother_checked = tk.IntVar()
         self.is_windows_checked = tk.IntVar()
+        self.is_reversed_checked = tk.IntVar()
 
         if 'input' in options:
             self.input_dirpath.set(options['input'])
@@ -152,7 +152,7 @@ class RectoVersoMainWindow(tk.Frame):
         output_dir_button.pack(side=tk.LEFT, padx=PAD//2)
 
         self.input_file_cols = ['name', 'sheet', 'side']
-        self.input_file_view = ttk.Treeview(self, columns=self.input_file_cols)
+        self.input_file_view = ttk.Treeview(self, columns=self.input_file_cols, show=['headings'])
         self.input_file_view.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=PAD//2, pady=PAD//2)
         self.input_file_view.heading("#0", text="#", anchor=tk.W)
         self.input_file_view.column("#0", width=10)
@@ -163,12 +163,19 @@ class RectoVersoMainWindow(tk.Frame):
         # options
         options_frame = tk.LabelFrame(self, text='options', padx=PAD//2, pady=PAD//2)
         options_frame.pack(padx=PAD//2, pady=PAD//2, fill=tk.X, expand=tk.FALSE, side=tk.TOP)
-
+        button = tk.Checkbutton(options_frame, text="brother", command=self.on_option, variable=self.is_brother_checked)
+        button.pack(side=tk.LEFT)
         button = tk.Checkbutton(options_frame, text="windows", command=self.on_option, variable=self.is_windows_checked)
-        button.pack(side=tk.TOP)
+        button.pack(side=tk.LEFT)
+        button = tk.Checkbutton(options_frame, text="reversed", command=self.on_option, variable=self.is_reversed_checked)
+        button.pack(side=tk.LEFT)
 
         button = tk.Button(options_frame, text="proceed", command=self.on_proceed)
-        button.pack(side=tk.TOP)
+        button.pack(side=tk.RIGHT)
+
+        self.is_brother_checked.set(1)
+        self.is_windows_checked.set(1)
+        self.is_reversed_checked.set(1)
 
         self.populate()
 
@@ -197,8 +204,15 @@ class RectoVersoMainWindow(tk.Frame):
     def populate(self):
         filepaths = populate_pages(self.input_dirpath.get())
         filepaths = (path.relpath(f, self.input_dirpath.get()) for f in filepaths)
+
+        if self.is_brother_checked.get():
+            filepaths = sort_brother_pages(filepaths)
+
         if self.is_windows_checked.get():
             filepaths = sort_widnows_files(filepaths)
+
+        if self.is_reversed_checked.get():
+            filepaths = sort_reversed_verso(filepaths)
 
         self.input_file_list = {}
 
