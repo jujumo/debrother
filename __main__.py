@@ -151,12 +151,13 @@ class RectoVersoMainWindow(tk.Frame):
         output_dir_button = tk.Button(output_dir_selector, text="...", command=self.on_browse_output)
         output_dir_button.pack(side=tk.LEFT, padx=PAD//2)
 
-        self.input_file_cols = ['name', 'page', 'alt']
+        self.input_file_cols = ['name', 'sheet', 'side']
         self.input_file_view = ttk.Treeview(self, columns=self.input_file_cols)
         self.input_file_view.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=PAD//2, pady=PAD//2)
-        self.input_file_view.heading("#0", text="Name", anchor=tk.W)
+        self.input_file_view.heading("#0", text="#", anchor=tk.W)
+        self.input_file_view.column("#0", width=10)
         for col_name in self.input_file_cols:
-            self.input_file_view.column(col_name, width=50)
+            # self.input_file_view.column(col_name, width=50)
             self.input_file_view.heading(col_name, text=col_name)
 
         # options
@@ -172,17 +173,20 @@ class RectoVersoMainWindow(tk.Frame):
         self.populate()
 
     def on_browse_input(self):
-        input_browse = tk.filedialog.askdirectory(title="Select scanned directory",
+        browse_dirpath = tk.filedialog.askdirectory(title="Select scanned directory",
                                                   initialdir=self.input_dirpath.get(),)
-        if input_browse:
-            self.input_dirpath.set(input_browse)
+        if browse_dirpath:
+            self.input_dirpath.set(browse_dirpath)
             self.populate()
 
     def on_populate(self):
         self.populate()
 
     def on_browse_output(self):
-        pass
+        browse_dirpath = tk.filedialog.askdirectory(title="Select output directory",
+                                                  initialdir=self.output_dirpath.get(),)
+        if browse_dirpath:
+            self.output_dirpath.set(browse_dirpath)
 
     def on_option(self):
         self.populate()
@@ -199,8 +203,8 @@ class RectoVersoMainWindow(tk.Frame):
         self.input_file_list = {}
 
         self.input_file_view.delete(*self.input_file_view.get_children())
-        for f in filepaths:
-            self.input_file_view.insert("", 0, text=f, values=('a', "1b"))
+        for i, f in enumerate(filepaths):
+            self.input_file_view.insert('', 'end', text=i, values=(f, 'a', "1b"))
 
 
 def rectoverso_main():
