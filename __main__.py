@@ -76,37 +76,54 @@ def sort_reversed_verso(file_list):
     return result
 
 
-def get_output_filepaths(input_filepath_list, output_dirpath):
+def sort_policy(filepaths, sorting_brother, sort_windows, sort_reversed):
+    filepaths = sorted(filepaths)
+    if sorting_brother:
+        filepaths = sort_brother_pages(filepaths)
+    if sort_windows:
+        filepaths = sort_widnows_files(filepaths)
+    if sort_reversed:
+        filepaths = sort_reversed_verso(filepaths)
+    return filepaths
+
+
+def get_output_filepaths(filepaths, output_dirpath, output_pattern):
     input_infos_list = [{
         'original': filepath,
         'page': page,
         'filename': path.basename(filepath),
         'basename': path.splitext(path.basename(filepath))[0],
         'ext': path.splitext(path.basename(filepath))[1][1:],
-    } for page, filepath in enumerate(input_filepath_list)]
+    } for page, filepath in enumerate(filepaths)]
+    output_filepath = path.join(output_dirpath, output_pattern)
+    return [output_filepath.format(**infos) for infos in input_infos_list]
 
-    return [output_dirpath.format(**infos) for infos in input_infos_list]
 
+def rename_files(input_filepaths, output_filepaths):
+    assert len(input_filepaths) == len(output_filepaths)
+    for src, dst in zip(input_filepaths, output_filepaths):
+        logging.debug('rename:\n\tfrom: {i}\n\tto  : {o}'.format(i=src, o=dst))
+        copyfile(src, dst)
 
-def rectoverso(input_dirpath, output_dirpath):
+def rectoverso(input_dirpath,
+               output_dirpath,
+               output_filepattern,
+               sorting_brother=True,
+               sort_windows=True,
+               sort_reversed=True):
     input_filepath_list = populate_pages(input_dirpath)
     nb_files = len(input_filepath_list)
     logging.info('files to rename: {}.'.format(nb_files))
 
-    input_filepath_list = sort_widnows_files(input_filepath_list)
-    input_filepath_list = sort_reversed_verso(input_filepath_list)
-    output_filepath_list = get_output_filepaths(input_filepath_list, output_dirpath)
-
-    for i, o in zip(input_filepath_list, output_filepath_list):
-        logging.debug('rename:\n\tfrom: {i}\n\tto  : {o}'.format(i=i, o=o))
-        copyfile(i, o)
+    input_filepath_list = sort_policy(input_filepath_list, sorting_brother, sort_windows, sort_reversed)
+    output_filepath_list = get_output_filepaths(input_filepath_list, output_dirpath, output_filepattern)
+    rename_files(input_filepath_list, output_filepath_list)
 
 
 class RectoVersoMainWindow(tk.Frame):
     def __init__(self, master, **options):
-        PAD = 10
         self.master = master
-        super().__init__(self.master, padx=PAD, pady=PAD)
+        super().__init__(self.master, padx=10, pady=10)
         self.master.title("RE order")
         self.pack(fill=tk.BOTH, expand=tk.TRUE)
 
@@ -114,11 +131,14 @@ class RectoVersoMainWindow(tk.Frame):
         # VARs
         self.input_dirpath = tk.StringVar()
         self.output_dirpath = tk.StringVar()
-        self.filename_pattern = tk.StringVar()
-        self.input_file_list = {}
+        self.output_pattern = tk.StringVar()
+        self.output_pattern.trace("w", lambda a,b,c : self.on_option())
         self.is_brother_checked = tk.IntVar()
+        self.is_brother_checked.trace("w", lambda a,b,c : self.on_option())
         self.is_windows_checked = tk.IntVar()
+        self.is_windows_checked.trace("w", lambda a,b,c : self.on_option())
         self.is_reversed_checked = tk.IntVar()
+        self.is_reversed_checked.trace("w", lambda a,b,c : self.on_option())
 
         if 'input' in options:
             self.input_dirpath.set(options['input'])
@@ -126,33 +146,58 @@ class RectoVersoMainWindow(tk.Frame):
             self.output_dirpath.set(options['output'])
 
         # GUIS
+        PAD = 10
+        LABEL_OPT = {'width': 10, 'anchor': tk.W}
         settings_frame = tk.LabelFrame(self, text='settings', padx=PAD//2, pady=PAD//2)
         settings_frame.pack(fill=tk.BOTH, expand=tk.FALSE, side=tk.TOP, padx=PAD//2, pady=PAD//2)
         # input
         input_frame = tk.Frame(settings_frame)
         input_frame.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP)
-        input_dir_selector = tk.Frame(input_frame, padx=PAD//2, pady=PAD//2)
-        input_dir_selector.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
-        input_dir_label = tk.Label(input_dir_selector, text='input:')
-        input_dir_label.pack(fill=tk.X, expand=tk.FALSE, side=tk.LEFT)
-        input_dir_path = tk.Entry(input_dir_selector, textvariable=self.input_dirpath)
+        # input dir
+        current_frame = tk.Frame(input_frame, padx=PAD//2, pady=PAD//2)
+        current_frame.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
+        label = tk.Label(current_frame, text='input:', **LABEL_OPT)
+        label.pack(fill=tk.X, expand=tk.FALSE, side=tk.LEFT)
+        input_dir_path = tk.Entry(current_frame, textvariable=self.input_dirpath)
         input_dir_path.pack(fill=tk.X, expand=tk.TRUE, side=tk.LEFT)
-        input_dir_button = tk.Button(input_dir_selector, text="...", command=self.on_browse_input)
+        input_dir_button = tk.Button(current_frame, text="...", command=self.on_browse_input)
         input_dir_button.pack(side=tk.LEFT, padx=PAD//2)
+        # sorting
+        current_frame = tk.Frame(input_frame, padx=PAD//2, pady=PAD//2)
+        current_frame.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
+        label = tk.Label(current_frame, text='sorting:', **LABEL_OPT)
+        label.pack(fill=tk.X, expand=tk.FALSE, side=tk.LEFT)
+        button = tk.Checkbutton(current_frame, text="brother", variable=self.is_brother_checked)
+        button.pack(side=tk.LEFT)
+        button = tk.Checkbutton(current_frame, text="windows", variable=self.is_windows_checked)
+        button.pack(side=tk.LEFT)
+        button = tk.Checkbutton(current_frame, text="reversed", variable=self.is_reversed_checked)
+        button.pack(side=tk.LEFT)
         # output
         output_frame = tk.Frame(settings_frame)
         output_frame.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP)
-        output_dir_selector = tk.Frame(output_frame, padx=PAD//2, pady=PAD//2)
-        output_dir_selector.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
-        output_dir_label = tk.Label(output_dir_selector, text='ouput:')
-        output_dir_label.pack(fill=tk.X, expand=tk.FALSE, side=tk.LEFT)
-        output_dir_path = tk.Entry(output_dir_selector, textvariable=self.output_dirpath)
+        # output dir
+        current_frame = tk.Frame(output_frame, padx=PAD//2, pady=PAD//2)
+        current_frame.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
+        label = tk.Label(current_frame, text='ouput:', **LABEL_OPT)
+        label.pack(fill=tk.X, expand=tk.FALSE, side=tk.LEFT)
+        output_dir_path = tk.Entry(current_frame, textvariable=self.output_dirpath)
         output_dir_path.pack(fill=tk.X, expand=tk.TRUE, side=tk.LEFT)
-        output_dir_button = tk.Button(output_dir_selector, text="...", command=self.on_browse_output)
+        output_dir_button = tk.Button(current_frame, text="...", command=self.on_browse_output)
+        output_dir_button.pack(side=tk.LEFT, padx=PAD//2)
+        # output pattern
+        current_frame = tk.Frame(output_frame, padx=PAD//2, pady=PAD//2)
+        current_frame.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
+        label = tk.Label(current_frame, text='rename :', **LABEL_OPT)
+        label.pack(fill=tk.X, expand=tk.FALSE, side=tk.LEFT)
+        output_rename = tk.Entry(current_frame, justify=tk.RIGHT, textvariable=self.output_pattern)
+        output_rename.pack(fill=tk.X, expand=tk.TRUE, side=tk.LEFT)
+        output_dir_button = tk.Button(current_frame, text="?", command=None)
         output_dir_button.pack(side=tk.LEFT, padx=PAD//2)
 
-        self.input_file_cols = ['name', 'sheet', 'side']
-        self.input_file_view = ttk.Treeview(self, columns=self.input_file_cols, show=['headings'])
+        # list
+        self.input_file_cols = ['original name', 'renamed']
+        self.input_file_view = ttk.Treeview(self, columns=self.input_file_cols)
         self.input_file_view.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=PAD//2, pady=PAD//2)
         self.input_file_view.heading("#0", text="#", anchor=tk.W)
         self.input_file_view.column("#0", width=10)
@@ -160,24 +205,20 @@ class RectoVersoMainWindow(tk.Frame):
             # self.input_file_view.column(col_name, width=50)
             self.input_file_view.heading(col_name, text=col_name)
 
-        # options
-        options_frame = tk.LabelFrame(self, text='options', padx=PAD//2, pady=PAD//2)
-        options_frame.pack(padx=PAD//2, pady=PAD//2, fill=tk.X, expand=tk.FALSE, side=tk.TOP)
-        button = tk.Checkbutton(options_frame, text="brother", command=self.on_option, variable=self.is_brother_checked)
-        button.pack(side=tk.LEFT)
-        button = tk.Checkbutton(options_frame, text="windows", command=self.on_option, variable=self.is_windows_checked)
-        button.pack(side=tk.LEFT)
-        button = tk.Checkbutton(options_frame, text="reversed", command=self.on_option, variable=self.is_reversed_checked)
-        button.pack(side=tk.LEFT)
+        # proceed
+        current_frame = tk.LabelFrame(self, text='proceed', padx=PAD//2, pady=PAD//2)
+        current_frame.pack(padx=PAD//2, pady=PAD//2, fill=tk.X, expand=tk.FALSE, side=tk.TOP)
+        button = tk.Button(current_frame, text="inplace", command=self.on_proceed)
+        button.pack(side=tk.RIGHT, padx=PAD//2, pady=PAD//2)
+        button = tk.Button(current_frame, text="copy", command=self.on_proceed)
+        button.pack(side=tk.RIGHT, padx=PAD//2, pady=PAD//2)
 
-        button = tk.Button(options_frame, text="proceed", command=self.on_proceed)
-        button.pack(side=tk.RIGHT)
-
+        # default values
+        self.output_pattern.set(options['pattern'])
         self.is_brother_checked.set(1)
         self.is_windows_checked.set(1)
         self.is_reversed_checked.set(1)
 
-        self.populate()
 
     def on_browse_input(self):
         browse_dirpath = tk.filedialog.askdirectory(title="Select scanned directory",
@@ -199,26 +240,27 @@ class RectoVersoMainWindow(tk.Frame):
         self.populate()
 
     def on_proceed(self):
-        rectoverso(self.input_dirpath.get(), self.output_dirpath.get())
+        rectoverso(self.input_dirpath.get(),
+                   self.output_dirpath.get(),
+                   self.output_pattern.get(),
+                   self.is_brother_checked.get(),
+                   self.is_windows_checked.get(),
+                   self.is_reversed_checked.get())
 
     def populate(self):
-        filepaths = populate_pages(self.input_dirpath.get())
-        filepaths = (path.relpath(f, self.input_dirpath.get()) for f in filepaths)
+        # sort
+        input_filepaths = populate_pages(self.input_dirpath.get())
+        input_filepaths = sort_policy(input_filepaths,
+                                self.is_brother_checked.get(),
+                                self.is_windows_checked.get(),
+                                self.is_reversed_checked.get())
 
-        if self.is_brother_checked.get():
-            filepaths = sort_brother_pages(filepaths)
-
-        if self.is_windows_checked.get():
-            filepaths = sort_widnows_files(filepaths)
-
-        if self.is_reversed_checked.get():
-            filepaths = sort_reversed_verso(filepaths)
-
-        self.input_file_list = {}
-
+        output_filepaths = get_output_filepaths(input_filepaths, '', self.output_pattern.get())
+        input_filepaths = (path.relpath(f, self.input_dirpath.get()) for f in input_filepaths)
+        # display
         self.input_file_view.delete(*self.input_file_view.get_children())
-        for i, f in enumerate(filepaths):
-            self.input_file_view.insert('', 'end', text=i, values=(f, 'a', "1b"))
+        for p, (i, o) in enumerate(zip(input_filepaths, output_filepaths)):
+            self.input_file_view.insert('', 'end', text=p, values=(i, o))
 
 
 def rectoverso_main():
@@ -226,7 +268,8 @@ def rectoverso_main():
         parser = argparse.ArgumentParser(description='rectoverso re-order and rename files (images) from scan.')
         parser.add_argument('-v', '--verbose', action='count', default=0, help='verbosity level')
         parser.add_argument('-i', '--input', required=False, help='input')
-        parser.add_argument('-o', '--output', default='', help='input')
+        parser.add_argument('-o', '--output', default=None, help='output directory [same as input]')
+        parser.add_argument('--pattern', default='{page:03d}.{ext}', help='output file name syntax.')
         parser.add_argument('-q', '--quiet', action='store_true', help='no gui')
         parser.add_argument('--debug', action='store_true', default=False, help='debug mode on')
         args = parser.parse_args()
@@ -237,7 +280,7 @@ def rectoverso_main():
             logging.getLogger().setLevel(logging.DEBUG)
 
         if args.quiet:
-            rectoverso(args.input, args.output, **vars(args))
+            rectoverso(args.input, args.output, args.pattern)
         else:
             root = tk.Tk()
             my_gui = RectoVersoMainWindow(root, **vars(args))
