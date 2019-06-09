@@ -51,7 +51,7 @@ def sort_brother_numbering(file_list):
     return sorted(file_list, key=get_brother_number)
 
 
-def sort_flip_sheets(file_list):
+def sort_flip_recto_verso(file_list):
     """
     just swap even and odd pages, like in the example below :
     in: [ 'A (2).jpg', 'A.jpg', 'B (2).jpg', 'B.jpg', ...]
@@ -69,40 +69,40 @@ def sort_flip_sheets(file_list):
     return swapped
 
 
-def sort_widnows_files(file_list):
+def sort_backward_verso(file_list):
     """
-    returns files order per pages and then batch :
-        ['xxx.jpg', 'xxx (2).jpg', 'yyy.jpg', 'yyy (2).jpg']
-        -->
-        ['xxx.jpg', 'yyy.jpg', 'xxx (2).jpg', 'yyy (2).jpg']
+    just reverse order (backward) of odd pages only, like in the example below :
+    in: [1,6,3,4,5,2]
+    out: [1,2,3,4,5,6]
+
+    :param file_list:
+    :return: sorted file list
     """
-    windows_batch_template = re.compile(r'(\s\((?P<batch>\d+)\))?\.\w+$')
+    # allocate
+    reorderd_list = [None] * len(file_list)
+    # keep even pages untouched
+    reorderd_list[::2] = file_list[::2]
+    # reveres order of odd pages
+    reorderd_list[1::2] = list(reversed(file_list[1::2]))
+    return reorderd_list
 
-    def get_windows_batch_number(filepath):
-        return int(windows_batch_template.search(filepath).groupdict()['batch'] or '1')
 
-    return sorted(file_list, key=get_windows_batch_number)
-
-
-def sort_reversed_verso(file_list):
+def sort_policy(filepaths, sorting_numbering, sort_flip_sheets, sort_backward_verso):
     """
-    [1,3,5,6,4,2] -> [1,2,3,4,5,6]
+    apply all sorting in the correct order.
+    :param filepaths:
+    :param sorting_numbering:
+    :param sort_flip_sheets:
+    :param sort_backward_verso:
+    :return:
     """
-    nb_pages = len(file_list)
-    result = [None] * nb_pages
-    result[0::2] = file_list[0:nb_pages//2]
-    result[1::2] = reversed(file_list[nb_pages//2:])
-    return result
-
-
-def sort_policy(filepaths, sorting_brother_numbering, sort_windows, sort_reversed):
     filepaths = sort_lexicographical(filepaths)
-    if sorting_brother_numbering:
+    if sorting_numbering:
         filepaths = sort_brother_numbering(filepaths)
-    if sort_windows:
-        filepaths = sort_widnows_files(filepaths)
-    if sort_reversed:
-        filepaths = sort_reversed_verso(filepaths)
+    if sort_flip_sheets:
+        filepaths = sort_flip_recto_verso(filepaths)
+    if sort_backward_verso:
+        filepaths = sort_backward_verso(filepaths)
     return filepaths
 
 

@@ -29,10 +29,10 @@ class RectoVersoMainWindow(tk.Frame):
         self.output_dirpath = tk.StringVar()
         self.output_pattern = tk.StringVar()
         self.output_pattern.trace("w", lambda a,b,c : self.on_option())
-        self.is_brother_checked = tk.IntVar()
-        self.is_brother_checked.trace("w", lambda a,b,c : self.on_option())
-        self.is_windows_checked = tk.IntVar()
-        self.is_windows_checked.trace("w", lambda a,b,c : self.on_option())
+        self.is_numbering_checked = tk.IntVar()
+        self.is_numbering_checked.trace("w", lambda a, b, c : self.on_option())
+        self.is_flip_checked = tk.IntVar()
+        self.is_flip_checked.trace("w", lambda a, b, c : self.on_option())
         self.is_reversed_checked = tk.IntVar()
         self.is_reversed_checked.trace("w", lambda a,b,c : self.on_option())
         self.column_sort = tk.IntVar()
@@ -65,11 +65,11 @@ class RectoVersoMainWindow(tk.Frame):
         current_frame.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
         label = tk.Label(current_frame, text='sorting:', **LABEL_OPT)
         label.pack(fill=tk.X, expand=tk.FALSE, side=tk.LEFT)
-        button = tk.Checkbutton(current_frame, text="numbering", variable=self.is_brother_checked)
+        button = tk.Checkbutton(current_frame, text="numbering", variable=self.is_numbering_checked)
         button.pack(side=tk.LEFT)
-        button = tk.Checkbutton(current_frame, text="sawp even/odds", variable=self.is_windows_checked)
+        button = tk.Checkbutton(current_frame, text="flip", variable=self.is_flip_checked)
         button.pack(side=tk.LEFT)
-        button = tk.Checkbutton(current_frame, text="reverse odds", variable=self.is_reversed_checked)
+        button = tk.Checkbutton(current_frame, text="backward verso", variable=self.is_reversed_checked)
         button.pack(side=tk.LEFT)
         # output
         output_frame = tk.Frame(settings_frame)
@@ -110,8 +110,8 @@ class RectoVersoMainWindow(tk.Frame):
 
         # default values
         self.output_pattern.set(options['pattern'])
-        self.is_brother_checked.set(1)
-        self.is_windows_checked.set(1)
+        self.is_numbering_checked.set(1)
+        self.is_flip_checked.set(1)
         self.is_reversed_checked.set(1)
         self.column_sort.set(0)
 
@@ -144,18 +144,17 @@ class RectoVersoMainWindow(tk.Frame):
         rectoverso(self.input_dirpath.get(),
                    self.output_dirpath.get(),
                    self.output_pattern.get(),
-                   self.is_brother_checked.get(),
-                   self.is_windows_checked.get(),
+                   self.is_numbering_checked.get(),
+                   self.is_flip_checked.get(),
                    self.is_reversed_checked.get())
 
     def populate(self):
         # sort
         input_filepaths = populate_pages(self.input_dirpath.get())
-        print(input_filepaths)
         input_filepaths = sort_policy(input_filepaths,
-                                self.is_brother_checked.get(),
-                                self.is_windows_checked.get(),
-                                self.is_reversed_checked.get())
+                                      self.is_numbering_checked.get(),
+                                      self.is_flip_checked.get(),
+                                      self.is_reversed_checked.get())
 
         output_filepaths = get_output_filepaths(input_filepaths,
                                                 self.output_dirpath.get(),

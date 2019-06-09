@@ -28,9 +28,14 @@ class TestSorting(unittest.TestCase):
         ]
 
     def test_flip(self):
-        result = sort_flip_sheets(self._samples)
+        result = sort_flip_recto_verso(self._samples)
         self.assertListEqual(result[::2], self._samples[1::2])
         self.assertListEqual(result[1::2], self._samples[::2])
+
+    def test_backward_verso(self):
+        result = sort_backward_verso(self._samples)
+        self.assertListEqual(result[::2], self._samples[::2])
+        self.assertListEqual(result[1::2], list(reversed(self._samples[1::2])))
 
 
 if __name__ == '__main__':
