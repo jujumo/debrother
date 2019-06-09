@@ -3,7 +3,7 @@
 :email: julien.morat@gmail.com
 :sectnums:
 :toc:
-:toclevels: 1
+:toclevels: 2
 :experimental:
 
 Sort *duplex* (recto-verso) files scanned with Brother.
@@ -35,8 +35,20 @@ settings:
  be created if not exists.
  - `rename`: the output file name syntax. Its using python `format` syntax.
 
-.rename syntax
-by default its set to  `{page:03d}.{ext}`, meaning:
+=== rename syntax
+
+Name syntaxe use python `format` syntax, ie. `{keyword}` will be
+replaced by the value of the `keyword`. Available keywords are :
+
+- `{page}`: is the page number. You can pad the number with `{page:03d}`,
+- `{ext}`: the original file extension (without `.`),
+- `{original}`: the original full file path,
+- `{filename}`: the original file name (without directory),
+- `{basename}`: the original base file name (without directory nor extension).
+
+
+.default
+By default its set to  `{page:03d}.{ext}`, meaning:
 
  - `{page:03d}`: the page number using `0` padding on 3 characters,
  - `{ext}`: use the original file extension.
