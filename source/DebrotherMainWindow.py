@@ -119,6 +119,8 @@ class DebrotherMainWindow(tk.Frame):
         self.is_reversed_checked.trace("w", lambda a, b, c: self.on_option_change())
         self.do_delete_checked.trace("w", lambda a, b, c: self.on_option_change())
         self.column_sort.trace("w", lambda a, b, c: self.on_option_change())
+        # force update on startup
+        self.on_option_change()
 
     def sort_col_factory(self, i):
         return lambda: self.column_sort.set(i)
