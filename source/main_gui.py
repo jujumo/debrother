@@ -1,10 +1,11 @@
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import tkinter as tk
 from tkinter import ttk
+import os.path as path
 from core import populate_pages, sort_policy, get_output_filepaths, rectoverso
 
 
-class RectoVersoMainWindow(tk.Frame):
+class DebrotherMainWindow(tk.Frame):
     def __init__(self, master, **options):
         self.master = master
         super().__init__(self.master, padx=10, pady=10)
@@ -79,7 +80,7 @@ class RectoVersoMainWindow(tk.Frame):
         label.pack(fill=tk.X, expand=tk.FALSE, side=tk.LEFT)
         output_rename = tk.Entry(current_frame, justify=tk.RIGHT, textvariable=self.output_pattern)
         output_rename.pack(fill=tk.X, expand=tk.TRUE, side=tk.LEFT)
-        output_dir_button = tk.Button(current_frame, text="?", command=None)
+        output_dir_button = tk.Button(current_frame, text="?", command=self.on_rename_help)
         output_dir_button.pack(side=tk.LEFT, padx=PAD//2)
 
         # list
@@ -125,6 +126,16 @@ class RectoVersoMainWindow(tk.Frame):
                                                   initialdir=self.output_dirpath.get(),)
         if browse_dirpath:
             self.output_dirpath.set(browse_dirpath)
+
+    def on_rename_help(self):
+        usage = "\
+        - `{page}`: is the page number. \n\tYou can pad the number with `{page:03d}`,\n\
+        - `{ext}`: the original file extension (without `.`),\n\
+        - `{original}`: the original full file path,\n\
+        - `{filename}`: the original file name (without directory),\n\
+        - `{basename}`: the original base file name (without directory nor extension).\n\
+        "
+        tk.messagebox.showinfo("Naming syntax", usage)
 
     def on_sort_original(self):
         self.column_sort.set('names')

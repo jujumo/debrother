@@ -5,12 +5,13 @@ import argparse
 import logging
 import tkinter as tk
 from core import rectoverso
-from main_gui import RectoVersoMainWindow
+from main_gui import DebrotherMainWindow
 
 
 def rectoverso_main():
     try:
-        parser = argparse.ArgumentParser(description='rectoverso re-order and rename files (images) from scan.')
+        parser = argparse.ArgumentParser(
+            description='debɹother re-order and rename files (images) from brother scanner.')
         parser.add_argument('-v', '--verbose', action='count', default=0, help='verbosity level')
         parser.add_argument('-i', '--input', required=False, help='input')
         parser.add_argument('-o', '--output', default=None, help='output directory [same as input]')
@@ -28,7 +29,7 @@ def rectoverso_main():
             rectoverso(args.input, args.output, args.pattern)
         else:
             root = tk.Tk()
-            my_gui = RectoVersoMainWindow(root, **vars(args))
+            my_gui = DebrotherMainWindow(root, **vars(args))
             root.mainloop()
 
     except Exception as e:
