@@ -18,17 +18,11 @@ class DebrotherMainWindow(tk.Frame):
         self.input_dirpath = tk.StringVar()
         self.output_dirpath = tk.StringVar()
         self.output_pattern = tk.StringVar()
-        self.output_pattern.trace("w", lambda a, b, c: self.on_option_change())
         self.is_numbering_checked = tk.IntVar()
-        self.is_numbering_checked.trace("w", lambda a, b, c: self.on_option_change())
         self.is_flip_checked = tk.IntVar()
-        self.is_flip_checked.trace("w", lambda a, b, c: self.on_option_change())
         self.is_reversed_checked = tk.IntVar()
-        self.is_reversed_checked.trace("w", lambda a, b, c: self.on_option_change())
         self.do_delete_checked = tk.IntVar()
-        self.do_delete_checked.trace("w", lambda a, b, c: self.on_option_change())
         self.column_sort = tk.IntVar()
-        self.column_sort.trace("w", lambda a, b, c: self.on_option_change())
         self.status = tk.StringVar()
 
         if 'input' in options and options['input'] is not None:
@@ -51,8 +45,8 @@ class DebrotherMainWindow(tk.Frame):
         current_frame.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
         label = tk.Label(current_frame, text='input:', **LABEL_OPT)
         label.pack(fill=tk.X, expand=tk.FALSE, side=tk.LEFT)
-        input_dir_path = tk.Entry(current_frame, textvariable=self.input_dirpath)
-        input_dir_path.pack(fill=tk.X, expand=tk.TRUE, side=tk.LEFT)
+        self.input_dirpath_entry = tk.Entry(current_frame, textvariable=self.input_dirpath)
+        self.input_dirpath_entry.pack(fill=tk.X, expand=tk.TRUE, side=tk.LEFT)
         input_dir_button = tk.Button(current_frame, text="...", command=self.on_browse_input)
         input_dir_button.pack(side=tk.LEFT, padx=PAD//2)
         # sorting
@@ -118,6 +112,14 @@ class DebrotherMainWindow(tk.Frame):
         self.is_reversed_checked.set(1)
         self.column_sort.set(0)
 
+        self.input_dirpath.trace("w", lambda a, b, c: self.on_option_change())
+        self.output_pattern.trace("w", lambda a, b, c: self.on_option_change())
+        self.is_numbering_checked.trace("w", lambda a, b, c: self.on_option_change())
+        self.is_flip_checked.trace("w", lambda a, b, c: self.on_option_change())
+        self.is_reversed_checked.trace("w", lambda a, b, c: self.on_option_change())
+        self.do_delete_checked.trace("w", lambda a, b, c: self.on_option_change())
+        self.column_sort.trace("w", lambda a, b, c: self.on_option_change())
+
     def sort_col_factory(self, i):
         return lambda: self.column_sort.set(i)
 
@@ -154,13 +156,26 @@ class DebrotherMainWindow(tk.Frame):
 
     def do_validate_options(self):
         everything_is_fine = True
-        try:
-            get_output_filepaths([r'sample\sample.png'], 'tmp', self.output_pattern.get())
-            self.output_rename_entry.config({"background": "White"})
-        except (ValueError, KeyError, IndexError) as e:
-            self.output_rename_entry.config({'background': '#FFA0A0'})
+        NOR = 'White'
+        RED = '#FFA0A0'
+        ORANGE = '#FFFFA0'
+
+        # input path
+        if path.isdir(self.input_dirpath.get()):
+            self.input_dirpath_entry.config(background=NOR)
+        else:
+            self.input_dirpath_entry.config(background=RED)
             everything_is_fine = False
 
+        # name syntax
+        try:
+            get_output_filepaths([r'sample\sample.png'], 'tmp', self.output_pattern.get())
+            self.output_rename_entry.config(background=NOR)
+        except (ValueError, KeyError, IndexError) as e:
+            self.output_rename_entry.config(background=RED)
+            everything_is_fine = False
+
+        # proceed authorized
         self.proceed_button.config(state=tk.NORMAL if everything_is_fine else tk.DISABLED)
 
     def do_refresh(self):
