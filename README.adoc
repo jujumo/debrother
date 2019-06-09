@@ -70,20 +70,9 @@ proceed:
 
 === numbering
 
-Brother scanning tool create files named like :
+When using the charger, for each page, scanning tool creates files named like :
 
-.numbering
-----
-'Numérisation_20190527.jpg',
-'Numérisation_20190527_2.jpg',
-...
-'Numérisation_20190527_9.jpg',
-'Numérisation_20190527_10.jpg',
-----
-
-but you file system (eg. __windows__) use lexicographical sort to display files,
-and it you have more that 10 pages, order is messed up, like :
-.numbering
+.originals
 ----
 'Numérisation_20190527.jpg',
 'Numérisation_20190527_10.jpg',
@@ -92,10 +81,78 @@ and it you have more that 10 pages, order is messed up, like :
 'Numérisation_20190527_9.jpg'
 ----
 
-The "numbering" sort take care of that.
-Other criteria (the rest of the file name) not considered, meaning leaved sorted
-as before.
+You will notice that `1` is omitted and numbers are not padded. With such naming,
+your file system, that uses lexicographical, will mess up the order of pages (like above).
+The "numbering sort" takes care of that and reorder files like below:
+
+.numbering order
+----
+'Numérisation_20190527.jpg',
+'Numérisation_20190527_2.jpg',
+...
+'Numérisation_20190527_9.jpg',
+'Numérisation_20190527_10.jpg',
+----
 
 === flip
 
+When scanning duplex (recto-verso) using the charger, you will scan odd pages all at once,
+and then even pages all at once. For the second scanned batch (verso), the scanning tool
+decides to start the numbering from the start but append `(2)` to the file name, as below:
+
+.originals
+----
+Numérisation_20190527 (2).jpg
+Numérisation_20190527.jpg
+Numérisation_20190527_10 (2).jpg
+Numérisation_20190527_10.jpg
+Numérisation_20190527_2 (2).jpg
+Numérisation_20190527_2.jpg
+...
+----
+
+Note that for some reasons the second page (with `(2)`) comes before the first one in
+lexicographical order.
+The "flip sort" takes care of that and flip even and odd files like below:
+
+.flipped
+----
+Numérisation_20190527.jpg
+Numérisation_20190527 (2).jpg
+Numérisation_20190527_10.jpg
+Numérisation_20190527_10 (2).jpg
+Numérisation_20190527_2.jpg
+Numérisation_20190527_2 (2).jpg
+...
+----
+
 === backward verso
+
+When scanning duplex (recto-verso) using the charger, you will scan odd pages all at once.
+But for practical reasons, you will insert odd (verso) pages in reverse order.
+It means that you start from the end page, and consequence, the second page
+is the last file.
+
+.originals
+----
+Numérisation_20190527.jpg
+Numérisation_20190527 (2).jpg
+Numérisation_20190527_2.jpg
+Numérisation_20190527_2 (2).jpg
+...
+Numérisation_20190527_10.jpg
+Numérisation_20190527_10 (2).jpg
+----
+
+The "backward verso" takes care of that and reverse the order of odd files like below:
+
+.backward
+----
+Numérisation_20190527.jpg
+Numérisation_20190527_10 (2).jpg
+Numérisation_20190527_2.jpg
+...
+Numérisation_20190527_2 (2).jpg
+Numérisation_20190527_10.jpg
+Numérisation_20190527 (2).jpg
+----
