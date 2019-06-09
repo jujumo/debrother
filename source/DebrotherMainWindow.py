@@ -18,19 +18,21 @@ class DebrotherMainWindow(tk.Frame):
         self.input_dirpath = tk.StringVar()
         self.output_dirpath = tk.StringVar()
         self.output_pattern = tk.StringVar()
-        self.output_pattern.trace("w", lambda a,b,c : self.on_option())
+        self.output_pattern.trace("w", lambda a, b, c: self.on_option())
         self.is_numbering_checked = tk.IntVar()
-        self.is_numbering_checked.trace("w", lambda a, b, c : self.on_option())
+        self.is_numbering_checked.trace("w", lambda a, b, c: self.on_option())
         self.is_flip_checked = tk.IntVar()
-        self.is_flip_checked.trace("w", lambda a, b, c : self.on_option())
+        self.is_flip_checked.trace("w", lambda a, b, c: self.on_option())
         self.is_reversed_checked = tk.IntVar()
-        self.is_reversed_checked.trace("w", lambda a,b,c : self.on_option())
+        self.is_reversed_checked.trace("w", lambda a, b, c: self.on_option())
         self.column_sort = tk.IntVar()
         self.column_sort.trace("w", lambda a,b,c : self.on_option())
 
-        if 'input' in options:
+        if 'input' in options and options['input'] is not None:
             self.input_dirpath.set(options['input'])
-        if 'output' in options:
+        else:
+            self.input_dirpath.set('./')
+        if 'output' in options and options['output'] is not None:
             self.output_dirpath.set(options['output'])
 
         # GUIS
@@ -116,14 +118,14 @@ class DebrotherMainWindow(tk.Frame):
 
     def on_browse_input(self):
         browse_dirpath = tk.filedialog.askdirectory(title="Select scanned directory",
-                                                  initialdir=self.input_dirpath.get(),)
+                                                    initialdir=self.input_dirpath.get(),)
         if browse_dirpath:
             self.input_dirpath.set(browse_dirpath)
             self.populate()
 
     def on_browse_output(self):
         browse_dirpath = tk.filedialog.askdirectory(title="Select output directory",
-                                                  initialdir=self.output_dirpath.get(),)
+                                                    initialdir=self.output_dirpath.get(),)
         if browse_dirpath:
             self.output_dirpath.set(browse_dirpath)
 
