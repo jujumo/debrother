@@ -125,7 +125,6 @@ def rename_files(input_filepaths, output_filepaths, delete_after_success=False):
     # - delete input (if requested)
     # - if errors: roll back
 
-    input_filepaths[1] = 'no_file'
     with tempfile.TemporaryDirectory() as tmp_dirname:
         jobs = [
             (
