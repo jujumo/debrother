@@ -5,7 +5,7 @@ import argparse
 import logging
 import tkinter as tk
 from core import rectoverso
-from main_gui import DebrotherMainWindow
+from DebrotherMainWindow import DebrotherMainWindow
 
 
 def rectoverso_main():
