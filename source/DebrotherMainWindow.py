@@ -153,16 +153,9 @@ class DebrotherMainWindow(tk.Frame):
         self.do_refresh()
 
     def do_validate_options(self):
-        fake_file_info = {
-            'original': r'c:\tmp\filename.png',
-            'page': 10,
-            'filename': 'filename.png',
-            'basename': 'filename',
-            'ext': 'png'
-        }
         everything_is_fine = True
         try:
-            self.output_pattern.get().format(**fake_file_info)
+            get_output_filepaths([r'sample\sample.png'], 'tmp', self.output_pattern.get())
             self.output_rename_entry.config({"background": "White"})
         except (ValueError, KeyError, IndexError) as e:
             self.output_rename_entry.config({'background': '#FFA0A0'})
