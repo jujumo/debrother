@@ -29,7 +29,16 @@ def populate_pages(input_dirpath):
     return sorted(file_list)
 
 
-def sort_brother_pages(file_list):
+def sort_lexicographical(file_list):
+    """
+    sort in lexicographical order (windows explorer should do that)
+    :param file_list:
+    :return:
+    """
+    return sorted(file_list)
+
+
+def sort_brother_numbering(file_list):
     """
     :param file_list:
     :return:
@@ -40,6 +49,24 @@ def sort_brother_pages(file_list):
         return int(brother_numbering_template.search(filepath).groupdict()['num'] or '1')
 
     return sorted(file_list, key=get_brother_number)
+
+
+def sort_flip_sheets(file_list):
+    """
+    just swap even and odd pages, like in the example below :
+    in: [ 'A (2).jpg', 'A.jpg', 'B (2).jpg', 'B.jpg', ...]
+    out: [ 'A.jpg', 'A (2).jpg', 'B.jpg', 'B (2).jpg', ...]
+
+    :param file_list:
+    :return: sorted file list
+    """
+    odds = file_list[::2]
+    evens = file_list[1::2]
+    swapped = [page for evens_odds in zip(evens, odds) for page in evens_odds]
+    if not len(odds) == len(evens):
+        assert len(odds) == len(evens) - 1
+        swapped.append(odds[-1])
+    return swapped
 
 
 def sort_widnows_files(file_list):
@@ -68,10 +95,10 @@ def sort_reversed_verso(file_list):
     return result
 
 
-def sort_policy(filepaths, sorting_brother, sort_windows, sort_reversed):
-    filepaths = sorted(filepaths)
-    if sorting_brother:
-        filepaths = sort_brother_pages(filepaths)
+def sort_policy(filepaths, sorting_brother_numbering, sort_windows, sort_reversed):
+    filepaths = sort_lexicographical(filepaths)
+    if sorting_brother_numbering:
+        filepaths = sort_brother_numbering(filepaths)
     if sort_windows:
         filepaths = sort_widnows_files(filepaths)
     if sort_reversed:

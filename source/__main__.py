@@ -65,11 +65,11 @@ class RectoVersoMainWindow(tk.Frame):
         current_frame.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
         label = tk.Label(current_frame, text='sorting:', **LABEL_OPT)
         label.pack(fill=tk.X, expand=tk.FALSE, side=tk.LEFT)
-        button = tk.Checkbutton(current_frame, text="brother", variable=self.is_brother_checked)
+        button = tk.Checkbutton(current_frame, text="numbering", variable=self.is_brother_checked)
         button.pack(side=tk.LEFT)
-        button = tk.Checkbutton(current_frame, text="windows", variable=self.is_windows_checked)
+        button = tk.Checkbutton(current_frame, text="sawp even/odds", variable=self.is_windows_checked)
         button.pack(side=tk.LEFT)
-        button = tk.Checkbutton(current_frame, text="reversed", variable=self.is_reversed_checked)
+        button = tk.Checkbutton(current_frame, text="reverse odds", variable=self.is_reversed_checked)
         button.pack(side=tk.LEFT)
         # output
         output_frame = tk.Frame(settings_frame)
@@ -151,6 +151,7 @@ class RectoVersoMainWindow(tk.Frame):
     def populate(self):
         # sort
         input_filepaths = populate_pages(self.input_dirpath.get())
+        print(input_filepaths)
         input_filepaths = sort_policy(input_filepaths,
                                 self.is_brother_checked.get(),
                                 self.is_windows_checked.get(),
