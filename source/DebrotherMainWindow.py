@@ -18,17 +18,17 @@ class DebrotherMainWindow(tk.Frame):
         self.input_dirpath = tk.StringVar()
         self.output_dirpath = tk.StringVar()
         self.output_pattern = tk.StringVar()
-        self.output_pattern.trace("w", lambda a, b, c: self.on_option())
+        self.output_pattern.trace("w", lambda a, b, c: self.on_option_change())
         self.is_numbering_checked = tk.IntVar()
-        self.is_numbering_checked.trace("w", lambda a, b, c: self.on_option())
+        self.is_numbering_checked.trace("w", lambda a, b, c: self.on_option_change())
         self.is_flip_checked = tk.IntVar()
-        self.is_flip_checked.trace("w", lambda a, b, c: self.on_option())
+        self.is_flip_checked.trace("w", lambda a, b, c: self.on_option_change())
         self.is_reversed_checked = tk.IntVar()
-        self.is_reversed_checked.trace("w", lambda a, b, c: self.on_option())
+        self.is_reversed_checked.trace("w", lambda a, b, c: self.on_option_change())
         self.do_delete_checked = tk.IntVar()
-        self.do_delete_checked.trace("w", lambda a, b, c: self.on_option())
+        self.do_delete_checked.trace("w", lambda a, b, c: self.on_option_change())
         self.column_sort = tk.IntVar()
-        self.column_sort.trace("w", lambda a, b, c: self.on_option())
+        self.column_sort.trace("w", lambda a, b, c: self.on_option_change())
         self.status = tk.StringVar()
 
         if 'input' in options and options['input'] is not None:
@@ -83,8 +83,8 @@ class DebrotherMainWindow(tk.Frame):
         current_frame.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
         label = tk.Label(current_frame, text='rename :', **LABEL_OPT)
         label.pack(fill=tk.X, expand=tk.FALSE, side=tk.LEFT)
-        output_rename = tk.Entry(current_frame, justify=tk.RIGHT, textvariable=self.output_pattern)
-        output_rename.pack(fill=tk.X, expand=tk.TRUE, side=tk.LEFT)
+        self.output_rename_entry = tk.Entry(current_frame, justify=tk.RIGHT, textvariable=self.output_pattern)
+        self.output_rename_entry.pack(fill=tk.X, expand=tk.TRUE, side=tk.LEFT)
         output_dir_button = tk.Button(current_frame, text="?", command=self.on_rename_help)
         output_dir_button.pack(side=tk.LEFT, padx=PAD//2)
 
@@ -101,8 +101,8 @@ class DebrotherMainWindow(tk.Frame):
         # proceed
         current_frame = tk.LabelFrame(self, text='proceed', padx=PAD//2, pady=PAD//2)
         current_frame.pack(padx=PAD//2, pady=PAD//2, fill=tk.X, expand=tk.FALSE, side=tk.TOP)
-        button = tk.Button(current_frame, text="copy", command=self.on_proceed)
-        button.pack(side=tk.RIGHT, padx=PAD//2, pady=PAD//2)
+        self.proceed_button = tk.Button(current_frame, text="copy", command=self.on_proceed)
+        self.proceed_button.pack(side=tk.RIGHT, padx=PAD//2, pady=PAD//2)
         button = tk.Checkbutton(current_frame, text="delete originals", variable=self.do_delete_checked)
         button.pack(side=tk.RIGHT, padx=PAD//2, pady=PAD//2)
 
@@ -148,16 +148,36 @@ class DebrotherMainWindow(tk.Frame):
         "
         tk.messagebox.showinfo("Naming syntax", usage)
 
-    def on_sort_original(self):
-        self.column_sort.set('names')
+    def on_option_change(self):
+        self.do_validate_options()
+        self.do_refresh()
 
-    def on_option(self):
+    def do_validate_options(self):
+        fake_file_info = {
+            'original': r'c:\tmp\filename.png',
+            'page': 10,
+            'filename': 'filename.png',
+            'basename': 'filename',
+            'ext': 'png'
+        }
+        everything_is_fine = True
+        try:
+            self.output_pattern.get().format(**fake_file_info)
+            self.output_rename_entry.config({"background": "White"})
+        except (ValueError, KeyError, IndexError) as e:
+            self.output_rename_entry.config({'background': '#FFA0A0'})
+            everything_is_fine = False
+
+        self.proceed_button.config(state=tk.NORMAL if everything_is_fine else tk.DISABLED)
+
+    def do_refresh(self):
         self.populate()
 
     def show_status(self, message):
         self.status.set(message)
 
     def show_error(self, message):
+        self.show_status('Error: ' + message)
         tk.messagebox.showerror("Error", message)
 
     def on_proceed(self):
@@ -170,8 +190,11 @@ class DebrotherMainWindow(tk.Frame):
                        self.is_reversed_checked.get(),
                        self.do_delete_checked.get()
                        )
+            self.show_status('success')
         except FileNotFoundError as e:
             self.show_error(str(e))
+        finally:
+            self.on_option_change()
 
     def populate(self):
         # sort
