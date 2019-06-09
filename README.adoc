@@ -1,0 +1,14 @@
+= debother_brother
+
+Brief: When I use the charger of my scanner for duplex (recto-verso) scanning,
+files stored in complete mess. Since the manufacturer does not provide
+proper tools to do duplex, I wrote this simple tool (python);
+It sorts the pages (files) of the scan in the correct order.
+
+NOTE: Tis is designed for brother multi-function (mfc-L2710DW) printer-scanner.
+This tool is untested for other devices, but if you have tested other devices,
+please, share me the results.
+
+== Usage
+
+== In details
