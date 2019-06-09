@@ -13,7 +13,7 @@ class DebrotherMainWindow(tk.Frame):
                           )
         self.pack(fill=tk.BOTH, expand=tk.TRUE)
 
-        master.geometry("800x800")
+        master.geometry("600x800")
         # VARs
         self.input_dirpath = tk.StringVar()
         self.output_dirpath = tk.StringVar()
@@ -28,7 +28,8 @@ class DebrotherMainWindow(tk.Frame):
         self.do_delete_checked = tk.IntVar()
         self.do_delete_checked.trace("w", lambda a, b, c: self.on_option())
         self.column_sort = tk.IntVar()
-        self.column_sort.trace("w", lambda a,b,c : self.on_option())
+        self.column_sort.trace("w", lambda a, b, c: self.on_option())
+        self.status = tk.StringVar()
 
         if 'input' in options and options['input'] is not None:
             self.input_dirpath.set(options['input'])
@@ -105,6 +106,11 @@ class DebrotherMainWindow(tk.Frame):
         button = tk.Checkbutton(current_frame, text="delete originals", variable=self.do_delete_checked)
         button.pack(side=tk.RIGHT, padx=PAD//2, pady=PAD//2)
 
+        # status
+        current_frame = tk.Label(self, bd=1, relief=tk.SUNKEN, anchor=tk.W,
+                                 textvariable=self.status, font=('arial', 16, 'normal'))
+        current_frame.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
+
         # default values
         self.output_pattern.set(options['pattern'])
         self.is_numbering_checked.set(1)
@@ -124,6 +130,7 @@ class DebrotherMainWindow(tk.Frame):
         if browse_dirpath:
             self.input_dirpath.set(browse_dirpath)
             self.populate()
+            self.show_status('{} files listed'.format(len(self.input_file_view.get_children())))
 
     def on_browse_output(self):
         browse_dirpath = tk.filedialog.askdirectory(title="Select output directory",
@@ -146,6 +153,9 @@ class DebrotherMainWindow(tk.Frame):
 
     def on_option(self):
         self.populate()
+
+    def show_status(self, message):
+        self.status.set(message)
 
     def show_error(self, message):
         tk.messagebox.showerror("Error", message)
