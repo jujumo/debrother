@@ -101,6 +101,12 @@ def get_output_filepaths(filepaths, output_dirpath, output_pattern):
 
 def rename_files(input_filepaths, output_filepaths):
     assert len(input_filepaths) == len(output_filepaths)
+
+    # - copy into a temp location
+    # - move to actual location
+    # - delete input (if requested)
+    # - if errors: roll back
+
     for src, dst in zip(input_filepaths, output_filepaths):
         logging.debug('rename:\n\tfrom: {i}\n\tto  : {o}'.format(i=src, o=dst))
         copyfile(src, dst)
