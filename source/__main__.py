@@ -3,12 +3,7 @@
 
 import argparse
 import logging
-from glob import glob
-import re
-import os
 import os.path as path
-from shutil import copyfile
-
 from tkinter import filedialog
 import tkinter as tk
 from tkinter import ttk
@@ -20,7 +15,8 @@ class RectoVersoMainWindow(tk.Frame):
     def __init__(self, master, **options):
         self.master = master
         super().__init__(self.master, padx=10, pady=10)
-        self.master.title("RE order")
+        self.master.title('debɹother'
+                          )
         self.pack(fill=tk.BOTH, expand=tk.TRUE)
 
         master.geometry("800x800")
@@ -99,6 +95,9 @@ class RectoVersoMainWindow(tk.Frame):
         self.input_file_view.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=PAD//2, pady=PAD//2)
         for i, col_name in enumerate(['#0'] + self.input_file_cols):
             self.input_file_view.heading(col_name, text=col_name, anchor=tk.W, command=self.sort_col_factory(i))
+        # '#0' is special
+        self.input_file_view.heading('#0', text='#')
+        self.input_file_view.column('#0', minwidth=40, width=40, stretch=tk.NO)
 
         # proceed
         current_frame = tk.LabelFrame(self, text='proceed', padx=PAD//2, pady=PAD//2)
