@@ -25,6 +25,8 @@ class DebrotherMainWindow(tk.Frame):
         self.is_flip_checked.trace("w", lambda a, b, c: self.on_option())
         self.is_reversed_checked = tk.IntVar()
         self.is_reversed_checked.trace("w", lambda a, b, c: self.on_option())
+        self.do_delete_checked = tk.IntVar()
+        self.do_delete_checked.trace("w", lambda a, b, c: self.on_option())
         self.column_sort = tk.IntVar()
         self.column_sort.trace("w", lambda a,b,c : self.on_option())
 
@@ -98,9 +100,9 @@ class DebrotherMainWindow(tk.Frame):
         # proceed
         current_frame = tk.LabelFrame(self, text='proceed', padx=PAD//2, pady=PAD//2)
         current_frame.pack(padx=PAD//2, pady=PAD//2, fill=tk.X, expand=tk.FALSE, side=tk.TOP)
-        button = tk.Button(current_frame, text="inplace", command=self.on_proceed)
-        button.pack(side=tk.RIGHT, padx=PAD//2, pady=PAD//2)
         button = tk.Button(current_frame, text="copy", command=self.on_proceed)
+        button.pack(side=tk.RIGHT, padx=PAD//2, pady=PAD//2)
+        button = tk.Checkbutton(current_frame, text="delete originals", variable=self.do_delete_checked)
         button.pack(side=tk.RIGHT, padx=PAD//2, pady=PAD//2)
 
         # default values
@@ -145,13 +147,21 @@ class DebrotherMainWindow(tk.Frame):
     def on_option(self):
         self.populate()
 
+    def show_error(self, message):
+        tk.messagebox.showerror("Error", message)
+
     def on_proceed(self):
-        rectoverso(self.input_dirpath.get(),
-                   self.output_dirpath.get(),
-                   self.output_pattern.get(),
-                   self.is_numbering_checked.get(),
-                   self.is_flip_checked.get(),
-                   self.is_reversed_checked.get())
+        try:
+            rectoverso(self.input_dirpath.get(),
+                       self.output_dirpath.get() or self.input_dirpath.get(),
+                       self.output_pattern.get(),
+                       self.is_numbering_checked.get(),
+                       self.is_flip_checked.get(),
+                       self.is_reversed_checked.get(),
+                       self.do_delete_checked.get()
+                       )
+        except FileNotFoundError as e:
+            self.show_error(str(e))
 
     def populate(self):
         # sort

@@ -1,9 +1,9 @@
 import os
 import os.path as path
 import re
-from shutil import copyfile
+import tempfile
+from shutil import copyfile, move
 import logging
-
 
 windows_scan_naming_convention = re.compile(r'(?P<base>.+_(\d){8})(_(?P<page>\d+))?(\s\((?P<batch>\d+)\))?\.\w+$')
 
@@ -118,17 +118,51 @@ def get_output_filepaths(filepaths, output_dirpath, output_pattern):
     return [output_filepath.format(**infos) for infos in input_infos_list]
 
 
-def rename_files(input_filepaths, output_filepaths):
+def rename_files(input_filepaths, output_filepaths, delete_after_success=False):
     assert len(input_filepaths) == len(output_filepaths)
-
     # - copy into a temp location
     # - move to actual location
     # - delete input (if requested)
     # - if errors: roll back
 
-    for src, dst in zip(input_filepaths, output_filepaths):
-        logging.debug('rename:\n\tfrom: {i}\n\tto  : {o}'.format(i=src, o=dst))
-        copyfile(src, dst)
+    input_filepaths[1] = 'no_file'
+    with tempfile.TemporaryDirectory() as tmp_dirname:
+        jobs = [
+            (
+                source,
+                dest,
+                path.join(tmp_dirname, '{:05d}.{}'.format(i, path.splitext(dest)[1]))
+            )
+            for i, (source, dest) in enumerate(zip(input_filepaths, output_filepaths))
+        ]
+
+        try:  # copy into a temp location
+            logging.debug('creating temp files in {}'.format(tmp_dirname))
+            for src, dst, tmp in jobs:
+                logging.debug('copy:\n\tfrom: {i}\n\tto  : {o}'.format(i=src, o=tmp))
+                copyfile(src, tmp)
+
+        except:
+            logging.critical('failed to read one or more files')
+            raise FileNotFoundError('failed to read one or more files.')
+
+        try:  # move to actual location
+            actually_moved = []
+            logging.debug('moving to actual locations')
+            for src, dst, tmp in jobs:
+                logging.debug('move:\n\tfrom: {i}\n\tto  : {o}'.format(i=tmp, o=dst))
+                move(tmp, dst)
+                actually_moved.append(dst)
+        except:
+            logging.critical('failed to create one or more files: roll back actually moved')
+            for f in actually_moved:
+                os.remove(f)
+            raise FileNotFoundError('failed to create one or more files.')
+
+        if delete_after_success:
+            for src, dst, tmp in jobs:
+                logging.debug('delete:\n\t{i}'.format(i=src))
+                move(src, tmp)
 
 
 def rectoverso(input_dirpath,
@@ -136,11 +170,12 @@ def rectoverso(input_dirpath,
                output_filepattern,
                sorting_brother=True,
                sort_windows=True,
-               sort_reversed=True):
+               sort_reversed=True,
+               delete_after_success=False):
     input_filepath_list = populate_pages(input_dirpath)
     nb_files = len(input_filepath_list)
     logging.info('files to rename: {}.'.format(nb_files))
 
     input_filepath_list = sort_policy(input_filepath_list, sorting_brother, sort_windows, sort_reversed)
     output_filepath_list = get_output_filepaths(input_filepath_list, output_dirpath, output_filepattern)
-    rename_files(input_filepath_list, output_filepath_list)
+    rename_files(input_filepath_list, output_filepath_list, delete_after_success)
