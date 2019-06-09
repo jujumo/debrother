@@ -87,21 +87,21 @@ def sort_backward_verso(file_list):
     return reorderd_list
 
 
-def sort_policy(filepaths, sorting_numbering, sort_flip_sheets, sort_backward_verso):
+def sort_policy(filepaths, sorting_numbering, sorting_flip_recto_verso, sorting_backward_verso):
     """
     apply all sorting in the correct order.
     :param filepaths:
-    :param sorting_numbering:
-    :param sort_flip_sheets:
-    :param sort_backward_verso:
+    :param sorting_numbering: apply sort_brother_numbering
+    :param sorting_flip_recto_verso: apply sort_flip_recto_verso
+    :param sorting_backward_verso: apply sort_backward_verso
     :return:
     """
     filepaths = sort_lexicographical(filepaths)
     if sorting_numbering:
         filepaths = sort_brother_numbering(filepaths)
-    if sort_flip_sheets:
+    if sorting_flip_recto_verso:
         filepaths = sort_flip_recto_verso(filepaths)
-    if sort_backward_verso:
+    if sorting_backward_verso:
         filepaths = sort_backward_verso(filepaths)
     return filepaths
 
