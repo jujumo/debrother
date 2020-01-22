@@ -4,6 +4,7 @@ import re
 import tempfile
 from shutil import copyfile, move
 import logging
+import datetime
 
 windows_scan_naming_convention = re.compile(r'(?P<base>.+_(\d){8})(_(?P<page>\d+))?(\s\((?P<batch>\d+)\))?\.\w+$')
 
@@ -107,13 +108,18 @@ def sort_policy(filepaths, sorting_numbering, sorting_flip_recto_verso, sorting_
 
 
 def get_output_filepaths(filepaths, output_dirpath, output_pattern):
+    now = datetime.datetime.now()
     input_infos_list = [{
         'original': filepath,
-        'page': page,
+        'index': index,
+        'page': index+1,
+        'yyyy': now.year,
+        'mm': now.month,
+        'dd': now.day,
         'filename': path.basename(filepath),
         'basename': path.splitext(path.basename(filepath))[0],
         'ext': path.splitext(path.basename(filepath))[1][1:],
-    } for page, filepath in enumerate(filepaths)]
+    } for index, filepath in enumerate(filepaths)]
     output_filepath = path.join(output_dirpath, output_pattern)
     return [output_filepath.format(**infos) for infos in input_infos_list]
 

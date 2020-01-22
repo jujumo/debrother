@@ -2,16 +2,52 @@ from tkinter import filedialog, messagebox
 import tkinter as tk
 from tkinter import ttk
 import os.path as path
+import configparser
 from core import populate_pages, sort_policy, get_output_filepaths, rectoverso
+import logging
+import sys
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler(sys.stdout))
+logger.setLevel(logging.DEBUG)
+
+
+class Config:
+    def __init__(self, filepath, **kwargs):
+        self._filepath = filepath
+        self._data = kwargs
+        assert all(kw in kwargs for kw in ['input', 'output', 'pattern'])
+
+    def set_default(self):
+        self._data['input'].set('./')
+        self._data['output'].set('./')
+        self._data['pattern'].set('{page:03}')
+
+    def load(self):
+        logger.info(f'loading from {self._filepath}')
+        config = configparser.ConfigParser()
+        config.read(self._filepath)
+        for k in self._data:
+            value = config['DEFAULT'].get(k)
+            if value:
+                self._data[k].set(value)
+
+    def save(self):
+        logger.info(f'saving to {self._filepath}')
+        config = configparser.ConfigParser()
+        for k in self._data:
+            val = self._data[k].get()
+            config['DEFAULT'][k] = str(val)
+        with open(self._filepath, 'w') as configfile:
+            config.write(configfile)
 
 
 class DebrotherMainWindow(tk.Frame):
-    def __init__(self, master, **options):
+    def __init__(self, master, **args):
         self.master = master
         super().__init__(self.master, padx=10, pady=10)
-        self.master.title('debɹother'
-                          )
+        self.master.title('debɹother')
         self.pack(fill=tk.BOTH, expand=tk.TRUE)
+        master.protocol("WM_DELETE_WINDOW", lambda: self.quit())
 
         master.geometry("600x800")
         # VARs
@@ -25,12 +61,19 @@ class DebrotherMainWindow(tk.Frame):
         self.column_sort = tk.IntVar()
         self.status = tk.StringVar()
 
-        if 'input' in options and options['input'] is not None:
-            self.input_dirpath.set(options['input'])
-        else:
-            self.input_dirpath.set('./')
-        if 'output' in options and options['output'] is not None:
-            self.output_dirpath.set(options['output'])
+        # config
+        self._config = Config(
+            args['config'],
+            input=self.input_dirpath,
+            output=self.output_dirpath,
+            pattern=self.output_pattern,
+            numbering=self.is_numbering_checked,
+            flip=self.is_flip_checked,
+            reversed=self.is_reversed_checked,
+            move=self.do_delete_checked,
+        )
+        self._config.set_default()
+        self._config.load()
 
         # GUIS
         PAD = 10
@@ -83,7 +126,7 @@ class DebrotherMainWindow(tk.Frame):
         output_dir_button.pack(side=tk.LEFT, padx=PAD//2)
 
         # list
-        self.input_file_cols = ['original', 'renamed']
+        self.input_file_cols = ['page', 'original', 'renamed']
         self.input_file_view = ttk.Treeview(self, columns=self.input_file_cols)
         self.input_file_view.pack(fill=tk.BOTH, expand=tk.TRUE, side=tk.TOP, padx=PAD//2, pady=PAD//2)
         for i, col_name in enumerate(['#0'] + self.input_file_cols):
@@ -105,13 +148,7 @@ class DebrotherMainWindow(tk.Frame):
                                  textvariable=self.status, font=('arial', 16, 'normal'))
         current_frame.pack(fill=tk.X, expand=tk.FALSE, side=tk.TOP)
 
-        # default values
-        self.output_pattern.set(options['pattern'])
-        self.is_numbering_checked.set(1)
-        self.is_flip_checked.set(1)
-        self.is_reversed_checked.set(1)
-        self.column_sort.set(0)
-
+        # default value
         self.input_dirpath.trace("w", lambda a, b, c: self.on_option_change())
         self.output_pattern.trace("w", lambda a, b, c: self.on_option_change())
         self.is_numbering_checked.trace("w", lambda a, b, c: self.on_option_change())
@@ -121,6 +158,10 @@ class DebrotherMainWindow(tk.Frame):
         self.column_sort.trace("w", lambda a, b, c: self.on_option_change())
         # force update on startup
         self.on_option_change()
+
+    def quit(self):
+        self._config.save()
+        self.master.destroy()
 
     def sort_col_factory(self, i):
         return lambda: self.column_sort.set(i)
@@ -144,8 +185,12 @@ class DebrotherMainWindow(tk.Frame):
 
     def on_rename_help(self):
         usage = "\
-        - `{page}`: is the page number. \n\tYou can pad the number with `{page:03d}`,\n\
+        - `{index}`: is the page number (0-based numbering).\n\
+        - `{page}`: is the page number (1-based numbering). \n\t\t(eg. `{page:03d}`),\n\
         - `{ext}`: the original file extension (without `.`),\n\
+        - `{yyyy}`: the current year,\n\
+        - `{mm}`: the current month (`{mm:02d}` to pad),\n\
+        - `{dd}`: the current day (`{dd:02d}` to pad),\n\
         - `{original}`: the original full file path,\n\
         - `{filename}`: the original file name (without directory),\n\
         - `{basename}`: the original base file name (without directory nor extension).\n\
@@ -219,10 +264,11 @@ class DebrotherMainWindow(tk.Frame):
                                                 self.output_pattern.get())
         # only life names
         if True:
+            page_numbers = (f'{p+1:04}' for p, _ in enumerate(input_filepaths))
             input_filepaths = (path.relpath(f, self.input_dirpath.get()) for f in input_filepaths)
             output_filepaths = (path.relpath(f, self.output_dirpath.get()) for f in output_filepaths)
 
-        columns = [(p, i, o) for p, (i, o) in enumerate(zip(input_filepaths, output_filepaths))]
+        columns = [(i, p, ip, op) for i, (p, ip, op) in enumerate(zip(page_numbers, input_filepaths, output_filepaths))]
 
         # resort for display
         columns = sorted(columns, key=lambda x : x[self.column_sort.get()])
