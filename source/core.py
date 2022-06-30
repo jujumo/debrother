@@ -65,7 +65,8 @@ def sort_flip_recto_verso(file_list):
     evens = file_list[1::2]
     swapped = [page for evens_odds in zip(evens, odds) for page in evens_odds]
     if not len(odds) == len(evens):
-        assert len(odds) == len(evens) - 1
+        if not len(odds) == len(evens) - 1:
+            raise IndexError('odd number of pages.')
         swapped.append(odds[-1])
     return swapped
 

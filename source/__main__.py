@@ -8,16 +8,31 @@ import tkinter as tk
 from core import rectoverso
 from DebrotherMainWindow import DebrotherMainWindow
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('deborther')
 logger.addHandler(logging.StreamHandler(sys.stdout))
+
+
+class VerbosityParsor(argparse.Action):
+    """ accept debug, info, ... or theirs corresponding integer value formatted as string."""
+    def __call__(self, parser, namespace, values, option_string=None):
+        try:  # in case it represent an int, directly get it
+            values = int(values)
+        except ValueError:  # else ask logging to sort it out
+            assert isinstance(values, str)
+            values = logging.getLevelName(values.upper())
+        setattr(namespace, self.dest, values)
 
 
 def rectoverso_main():
     try:
         cli_parser = argparse.ArgumentParser(
             description='debɹother re-order and rename files (images) from brother scanner.')
-        cli_parser.add_argument('-v', '--verbose', action='count', default=0,
-                                help='verbosity level')
+        parser_verbosity = cli_parser.add_mutually_exclusive_group()
+        parser_verbosity.add_argument(
+            '-v', '--verbose', nargs='?', default=logging.WARNING, const=logging.INFO, action=VerbosityParsor,
+            help='verbosity level (debug, info, warning, critical, ... or int value) [warning]')
+        parser_verbosity.add_argument(
+            '-q', '--silent', '--quiet', action='store_const', dest='verbose', const=logging.CRITICAL)
         cli_parser.add_argument('-i', '--input',
                                 help='input')
         cli_parser.add_argument('-o', '--output',
@@ -26,23 +41,21 @@ def rectoverso_main():
                                 help='path to config file[debrother.ini]')
         cli_parser.add_argument('--pattern',
                                 help='output file name syntax.')
-        cli_parser.add_argument('-q', '--quiet', action='store_true',
+        cli_parser.add_argument('--nogui', action='store_true',
                                 help='no gui')
         cli_parser.add_argument('--debug', action='store_true', default=False,
                                 help='debug mode on')
         args = cli_parser.parse_args()
 
-        if args.verbose:
-            logger.setLevel(logging.INFO)
-        if args.verbose > 1:
-            logger.setLevel(logging.DEBUG)
+
+        logger.setLevel(args.verbose)
 
         args.config = path.abspath(args.config)
         logger.info(
             'config:\n' + '\n'.join(f'\t--{k:10} {v}' for k, v in args.__dict__.items())
         )
 
-        if args.quiet:
+        if args.nogui:
             rectoverso(args.input, args.output, args.pattern)
         else:
             logger.debug('init GUI')
@@ -53,7 +66,7 @@ def rectoverso_main():
 
     except Exception as e:
         logger.critical(e)
-        if args.debug:
+        if args.verbose <= logging.DEBUG:
             raise
 
 
